@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice 3 : Leaflet Avancé</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 100vh; }
+        body { padding: 0; margin: 0; }
+        #distance-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            font-family: sans-serif;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="distance-info">Distance avec Marseille : en attente...</div>
+
+    <script>
+        // Coordonnées
+        const niceCoords = [43.71017, 7.26195]; //
+        const marseilleCoords = [43.296482, 5.36978]; //
+
+        // Initialisation de la carte
+        const map = L.map('map').setView(niceCoords, 9);
+
+        // Changement de carte pour Stamen Toner 
+        L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.{ext}', {
+            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            subdomains: 'abcd',
+            minZoom: 0,
+            maxZoom: 20,
+            ext: 'png'
+        }).addTo(map);
+
+        // Mettre un segment entre Marseille et Nice 
+        L.polyline([marseilleCoords, niceCoords], {color: 'blue'}).addTo(map);
+        L.marker(marseilleCoords).addTo(map).bindPopup("<b>Marseille</b>");
+        L.marker(niceCoords).addTo(map).bindPopup("<b>Nice</b>");
+        
+        // Ajout de données GeoJSON (Ex: Voies principales de Nice) 
+        const geojsonUrl = 'https://opendata.nicecotedazur.org/data/storage/f/2025-06-17T11%3A30%3A08.819Z/voies-principales-nca.geojson'; //
+        fetch(geojsonUrl)
+          .then(response => response.json())
+          .then(data => {
+            L.geoJSON(data, {
+              style: function (feature) {
+                return {color: '#ff7800', weight: 2};
+              }
+            }).addTo(map).bindPopup("Données GeoJSON : Voies Principales");
+          })
+          .catch(error => console.error('Erreur de chargement GeoJSON:', error));
+
+
+        // Géolocalisation de l'utilisateur
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                const userAccuracy = position.coords.accuracy;
+                const userLatLng = L.latLng(userLat, userLng);
+                
+                map.setView(userLatLng, 13);
+                L.marker(userLatLng).addTo(map).bindPopup("<b>Vous êtes ici</b>");
+
+                // Dessiner un cercle représentant la précision 
+                L.circle(userLatLng, {
+                    radius: userAccuracy,
+                    color: 'green',
+                    fillColor: '#8fbc8f',
+                    fillOpacity: 0.5
+                }).addTo(map).bindPopup(`Précision de ${userAccuracy.toFixed(2)} mètres`);
+
+                // Calculer et afficher la distance entre Marseille et notre position 
+                const marseilleLatLng = L.latLng(marseilleCoords[0], marseilleCoords[1]);
+                const distance = userLatLng.distanceTo(marseilleLatLng); // en mètres
+
+                const distanceInfo = document.getElementById('distance-info');
+                distanceInfo.innerHTML = `Distance avec Marseille : <strong>${(distance / 1000).toFixed(2)} km</strong>`; 
+
+            }, function() {
+                alert('Impossible de récupérer votre position.');
+            });
+        } else {
+            alert("La géolocalisation n'est pas supportée par votre navigateur.");
+        }
+    </script>
+</body>
+</html>

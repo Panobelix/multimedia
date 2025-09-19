@@ -3,89 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Géolocalisation</title>
+    <title>TP de Sensibilisation Multimédia</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+        body { font-family: sans-serif; line-height: 1.6; padding: 2em; }
         h1, h2 { color: #333; }
-        .result-box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 8px; background-color: #f9f9f9; }
-        strong { color: #0056b3; }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 1em; }
+        a { text-decoration: none; color: #007bff; font-size: 1.2em; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-
-    <h1>Exercice de Géolocalisation</h1>
-
-    <div class="result-box">
-        <h2>Résultat avec <code>getCurrentPosition()</code></h2>
-        <p id="geo-once">En attente de la position...</p>
-    </div>
-
-    <div class="result-box">
-        <h2>Résultat avec <code>watchPosition()</code> (suivi en temps réel)</h2>
-        <p id="geo-watch">En attente de la position...</p>
-    </div>
-
-    <script>
-        // Fonction pour formater et afficher les données de position
-        function formatPosition(position) {
-            const coords = position.coords;
-            const timestamp = position.timestamp;
-
-            // Conversion du timestamp en date lisible
-            const date = new Date(timestamp).toLocaleString('fr-FR');
-
-            return `
-                <b>Latitude :</b> ${coords.latitude} <br>
-                <b>Longitude :</b> ${coords.longitude} <br>
-                <b>Précision :</b> ${coords.accuracy.toFixed(2)} mètres <br>
-                <b>Altitude :</b> ${coords.altitude ? coords.altitude + ' mètres' : 'Non disponible'} <br>
-                <b>Vitesse :</b> ${coords.speed ? coords.speed + ' m/s' : 'Non disponible'} <br>
-                <b>Date :</b> ${date}
-            `;
-        }
-
-        // Fonction de gestion des erreurs
-        function showError(error) {
-            let message = '';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message = "L'utilisateur a refusé la demande de géolocalisation.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    message = "L'information de localisation n'est pas disponible.";
-                    break;
-                case error.TIMEOUT:
-                    message = "La demande de localisation a expiré.";
-                    break;
-                case error.UNKNOWN_ERROR:
-                    message = "Une erreur inconnue est survenue.";
-                    break;
-            }
-            document.getElementById('geo-once').innerHTML = message;
-            document.getElementById('geo-watch').innerHTML = message;
-        }
-
-        // Vérifie si la géolocalisation est supportée par le navigateur
-        if (navigator.geolocation) {
-            
-            // --- 1. Utilisation de getCurrentPosition() ---
-            // Récupère la position une seule fois.
-            navigator.geolocation.getCurrentPosition(position => {
-                const resultDiv = document.getElementById('geo-once');
-                resultDiv.innerHTML = formatPosition(position);
-            }, showError);
-
-            // --- 2. Utilisation de watchPosition() ---
-            // Met à jour la position chaque fois que l'appareil détecte un mouvement.
-            navigator.geolocation.watchPosition(position => {
-                const resultDiv = document.getElementById('geo-watch');
-                resultDiv.innerHTML = formatPosition(position);
-            }, showError);
-
-        } else {
-            alert("La géolocalisation n'est pas supportée par ce navigateur.");
-        }
-    </script>
-
+    <h1>TP Sensibilisation Programmation Multimédia</h1>
+    <h2>TD 1 - Géolocalisation et Cartographie</h2>
+    <ul>
+        <li><a href="TD1/Exo1/index.html">Exercice 1 : Géolocalisation HTML</a></li>
+        <li><a href="TD1/Exo2/index.html">Exercice 2 : Leaflet - Bases</a></li>
+        <li><a href="TD1/Exo3/index.html">Exercice 3 : Leaflet - Avancé</a></li>
+    </ul>
 </body>
 </html>

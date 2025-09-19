@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice 1 : Géolocalisation</title>
+    <style>
+        body { font-family: sans-serif; padding: 1em; }
+        .container { max-width: 800px; margin: auto; }
+        .geo-data { border: 1px solid #ccc; padding: 1em; margin-top: 1em; border-radius: 5px; }
+        h1, h2 { color: #333; }
+        p { margin: 0.5em 0; }
+        strong { color: #555; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Exercice 1 : Géolocalisation HTML</h1>
+        <p>Cette page affiche vos données de géolocalisation. Veuillez autoriser l'accès à votre position.</p>
+
+        <div id="getCurrentPositionData" class="geo-data">
+            <h2>Résultats avec <code>getCurrentPosition()</code> (position unique)</h2>
+            <p id="gcp-status">En attente de la position...</p>
+        </div>
+
+        <div id="watchPositionData" class="geo-data">
+            <h2>Résultats avec <code>watchPosition()</code> (suivi en temps réel)</h2>
+            <p id="wp-status">En attente de la position...</p>
+        </div>
+    </div>
+
+    <script>
+        function displayPosition(position, elementId) {
+            const container = document.getElementById(elementId);
+            const status = container.querySelector('p');
+            const coords = position.coords;
+            const timestamp = new Date(position.timestamp).toLocaleString();
+
+            status.innerHTML = `
+                <p><strong>Latitude :</strong> ${coords.latitude.toFixed(6)}</p>
+                <p><strong>Longitude :</strong> ${coords.longitude.toFixed(6)}</p>
+                <p><strong>Altitude :</strong> ${coords.altitude ? coords.altitude + ' mètres' : 'Non disponible'}</p>
+                <p><strong>Précision (mètres) :</strong> ${coords.accuracy.toFixed(2)}</p>
+                <p><strong>Vitesse (m/s) :</strong> ${coords.speed ? coords.speed.toFixed(2) : 'Non disponible'}</p>
+                <p><strong>Date (Timestamp) :</strong> ${timestamp}</p>
+            `;
+        }
+
+        function handleError(error, elementId) {
+            const status = document.querySelector(`#${elementId} > p`);
+            status.textContent = `Erreur de géolocalisation : ${error.message}`;
+        }
+
+        if (!navigator.geolocation) {
+            alert("La géolocalisation n'est pas supportée par votre navigateur.");
+        } else {
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            // Méthode getCurrentPosition
+            navigator.geolocation.getCurrentPosition(
+                (pos) => displayPosition(pos, 'getCurrentPositionData'),
+                (err) => handleError(err, 'gcp-status'),
+                options
+            );
+
+            // Méthode watchPosition
+            navigator.geolocation.watchPosition(
+                (pos) => displayPosition(pos, 'watchPositionData'),
+                (err) => handleError(err, 'wp-status'),
+                options
+            );
+        }
+    </script>
+</body>
+</html>

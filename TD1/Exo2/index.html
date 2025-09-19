@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercice 2 : Leaflet et Géolocalisation</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+    <style>
+        #map { height: 100vh; }
+        body { padding: 0; margin: 0; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Coordonnées pour les points fixes
+        const niceCoords = [43.71017, 7.26195]; // Centre de Nice
+        const bermudaTriangleCoords = [
+            [25.761681, -80.191788], // Miami
+            [18.4655, -66.105721],   // San Juan, Puerto Rico
+            [32.2948, -64.7813]      // Bermuda
+        ];
+
+        // Initialisation de la carte sur Nice en attendant la géolocalisation
+        const map = L.map('map').setView(niceCoords, 13);
+
+        // Ajout du fond de carte OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Ajout du marqueur pour Nice 
+        L.marker(niceCoords).addTo(map).bindPopup("<b>Centre de Nice</b>").openPopup();
+
+        // Ajout du polygone pour le triangle des Bermudes 
+        L.polygon(bermudaTriangleCoords, {color: 'red'}).addTo(map).bindPopup("Triangle des Bermudes");
+
+        // Géolocalisation de l'utilisateur
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                const userCoords = [userLat, userLng];
+
+                // Centrer la carte sur la position de l'utilisateur 
+                map.setView(userCoords, 14);
+
+                // Afficher un marqueur sur la position de l'utilisateur 
+                L.marker(userCoords).addTo(map).bindPopup("<b>Vous êtes ici !</b>");
+            }, function() {
+                alert('Impossible de récupérer votre position.');
+            });
+        } else {
+            alert("La géolocalisation n'est pas supportée par votre navigateur.");
+        }
+    </script>
+</body>
+</html>
