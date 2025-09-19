@@ -3,94 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exercice 3 : Leaflet Avancé</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <title>Exercice 3 (Corrigé) : Leaflet Avancé</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
-        #map { height: 100vh; }
-        body { padding: 0; margin: 0; }
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
         #distance-info {
             position: absolute;
             top: 10px;
             right: 10px;
-            background: white;
+            background: rgba(255, 255, 255, 0.8);
             padding: 10px;
             border-radius: 5px;
-            z-index: 1000;
+            z-index: 800;
             font-family: sans-serif;
             border: 1px solid #ccc;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    <div id="distance-info">Distance avec Marseille : en attente...</div>
-
+    <div id="distance-info">Distance avec Marseille : en attente de votre position...</div>
     <script>
-        // Coordonnées
-        const niceCoords = [43.71017, 7.26195]; //
-        const marseilleCoords = [43.296482, 5.36978]; //
-
-        // Initialisation de la carte
+        const niceCoords = [43.71017, 7.26195];
+        const marseilleCoords = [43.296482, 5.36978];
         const map = L.map('map').setView(niceCoords, 9);
-
-        // Changement de carte pour Stamen Toner 
-        L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.{ext}', {
-            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             subdomains: 'abcd',
-            minZoom: 0,
-            maxZoom: 20,
-            ext: 'png'
+            maxZoom: 20
         }).addTo(map);
-
-        // Mettre un segment entre Marseille et Nice 
-        L.polyline([marseilleCoords, niceCoords], {color: 'blue'}).addTo(map);
         L.marker(marseilleCoords).addTo(map).bindPopup("<b>Marseille</b>");
         L.marker(niceCoords).addTo(map).bindPopup("<b>Nice</b>");
-        
-        // Ajout de données GeoJSON (Ex: Voies principales de Nice) 
-        const geojsonUrl = 'https://opendata.nicecotedazur.org/data/storage/f/2025-06-17T11%3A30%3A08.819Z/voies-principales-nca.geojson'; //
+        L.polyline([marseilleCoords, niceCoords], {color: 'blue', weight: 3}).addTo(map);
+        const geojsonUrl = 'https://opendata.nicecotedazur.org/data/storage/f/2023-11-20T14%3A46%3A33.373Z/defibrillateurs.geojson';
         fetch(geojsonUrl)
           .then(response => response.json())
           .then(data => {
             L.geoJSON(data, {
-              style: function (feature) {
-                return {color: '#ff7800', weight: 2};
-              }
-            }).addTo(map).bindPopup("Données GeoJSON : Voies Principales");
+                pointToLayer: function (feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        radius: 4,
+                        fillColor: "#ff7800",
+                        color: "#000",
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                }
+            }).addTo(map).bindPopup("GeoJSON: Défibrillateurs");
           })
-          .catch(error => console.error('Erreur de chargement GeoJSON:', error));
-
-
-        // Géolocalisation de l'utilisateur
+          .catch(error => console.error('Erreur de chargement des données GeoJSON:', error));
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                const userLat = position.coords.latitude;
-                const userLng = position.coords.longitude;
-                const userAccuracy = position.coords.accuracy;
-                const userLatLng = L.latLng(userLat, userLng);
-                
-                map.setView(userLatLng, 13);
-                L.marker(userLatLng).addTo(map).bindPopup("<b>Vous êtes ici</b>");
-
-                // Dessiner un cercle représentant la précision 
-                L.circle(userLatLng, {
-                    radius: userAccuracy,
-                    color: 'green',
-                    fillColor: '#8fbc8f',
-                    fillOpacity: 0.5
-                }).addTo(map).bindPopup(`Précision de ${userAccuracy.toFixed(2)} mètres`);
-
-                // Calculer et afficher la distance entre Marseille et notre position 
-                const marseilleLatLng = L.latLng(marseilleCoords[0], marseilleCoords[1]);
-                const distance = userLatLng.distanceTo(marseilleLatLng); // en mètres
-
-                const distanceInfo = document.getElementById('distance-info');
-                distanceInfo.innerHTML = `Distance avec Marseille : <strong>${(distance / 1000).toFixed(2)} km</strong>`; 
-
-            }, function() {
-                alert('Impossible de récupérer votre position.');
-            });
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    const userAccuracy = position.coords.accuracy;
+                    const userLatLng = L.latLng(userLat, userLng);
+                    map.setView(userLatLng, 13);
+                    L.marker(userLatLng).addTo(map).bindPopup("<b>Vous êtes ici !</b>").openPopup();
+                    L.circle(userLatLng, {
+                        radius: userAccuracy,
+                        color: 'green',
+                        fillColor: '#8fbc8f',
+                        fillOpacity: 0.4
+                    }).addTo(map).bindPopup(`Précision de ${userAccuracy.toFixed(2)} mètres`);
+                    const marseilleLatLng = L.latLng(marseilleCoords[0], marseilleCoords[1]);
+                    const distance = userLatLng.distanceTo(marseilleLatLng);
+                    const distanceInfo = document.getElementById('distance-info');
+                    distanceInfo.innerHTML = `Distance avec Marseille : <strong>${(distance / 1000).toFixed(2)} km</strong>`;
+                },
+                function() {
+                    alert('Impossible de récupérer votre position. La carte restera centrée sur Nice.');
+                },
+                { enableHighAccuracy: true }
+            );
         } else {
             alert("La géolocalisation n'est pas supportée par votre navigateur.");
         }
