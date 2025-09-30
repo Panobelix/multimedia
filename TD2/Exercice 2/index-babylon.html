@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>TP Babylon.js - Exercice 2</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body { position: relative; }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        #titleOverlay {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            margin: 0;
+            padding: 6px 10px;
+            color: #fff;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            font-weight: 700;
+            font-size: 40px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.15);
+            border-radius: 6px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        #statusOverlay {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            padding: 6px 10px;
+            color: #e6f7ff;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            font-size: 14px;
+            background: rgba(0,0,0,0.35);
+            border-radius: 6px;
+            z-index: 1000;
+            pointer-events: none;
+            white-space: pre-line;
+        }
+    </style>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+</head>
+<body>
+    <h1 id="titleOverlay">L'invasion des canards</h1>
+    <canvas id="renderCanvas"></canvas>
+    <div id="statusOverlay">Chargement des canards…</div>
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);
+        const statusEl = document.getElementById('statusOverlay');
+        const setStatus = msg => { if (statusEl) statusEl.textContent = msg; };
+
+        const createScene = () => {
+            const scene = new BABYLON.Scene(engine);
+            scene.clearColor = BABYLON.Color3.FromHexString("#221133");
+
+            const camera = new BABYLON.DeviceOrientationCamera("DevOrCamera", new BABYLON.Vector3(-40, 20, 8), scene);
+            camera.setTarget(new BABYLON.Vector3(0, 1, 0));
+            camera.attachControl(canvas, true);
+
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.9;
+            const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-0.5, -1, -0.3), scene);
+            dirLight.position = new BABYLON.Vector3(10, 20, 10);
+            dirLight.intensity = 0.6;
+
+            const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { diameter: 2 }, scene);
+            sphere.position = new BABYLON.Vector3(-2, 1, 0);
+            const sphereMaterial = new BABYLON.StandardMaterial("sphereMat", scene);
+            sphereMaterial.diffuseTexture = new BABYLON.Texture("texture.jpg", scene);
+            sphere.material = sphereMaterial;
+
+            let duckContainer = null, duckSpawned = 0;
+            const duckSources = [
+                { root: 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/', file: 'Duck.glb' },
+                { root: 'https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@2.0/Duck/glTF-Binary/', file: 'Duck.glb' }
+            ];
+
+            const loadDuckAt = (index = 0) => {
+                if (index >= duckSources.length) {
+                    setStatus('Échec: impossible de charger le modèle Duck en ligne.\nVérifiez votre connexion réseau.');
+                    return;
+                }
+                const src = duckSources[index];
+                setStatus(`Chargement Duck… (source ${index + 1}/${duckSources.length})`);
+                BABYLON.SceneLoader.LoadAssetContainer(
+                    src.root,
+                    src.file,
+                    scene,
+                    container => {
+                        duckContainer = container;
+                        setStatus('Duck chargé. Apparitions en cours…');
+                        spawnDucks(3);
+                    },
+                    null,
+                    () => loadDuckAt(index + 1)
+                );
+            };
+            loadDuckAt(0);
+
+            const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+            const spawnDucks = (n = 3) => {
+                if (!duckContainer) return;
+                for (let i = 0; i < n; i++) {
+                    const inst = duckContainer.instantiateModelsToScene(name => `duck_${Date.now()}_${i}_${Math.random().toString(36).slice(2)}`);
+                    const root = inst.rootNodes && inst.rootNodes[0] ? inst.rootNodes[0] : null;
+                    if (root) {
+                        root.position = new BABYLON.Vector3(
+                            randomInRange(-10, 10),
+                            randomInRange(0.5, 3),
+                            randomInRange(-10, 10)
+                        );
+                        root.computeWorldMatrix(true);
+                        const b = root.getHierarchyBoundingVectors(true);
+                        const size = b.max.subtract(b.min);
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        const target = 1.5;
+                        const s = maxDim > 0 ? target / maxDim : 1;
+                        root.scaling = new BABYLON.Vector3(s, s, s);
+                        root.rotation = new BABYLON.Vector3(0, Math.random() * Math.PI * 2, 0);
+                        duckSpawned++;
+                        setStatus(`Duck chargé. Apparitions en cours…\nTotal: ${duckSpawned}`);
+                    }
+                }
+            };
+
+            setInterval(() => spawnDucks(3), 2000);
+
+            const onCasaLoaded = meshes => {
+                if (!meshes || meshes.length === 0) return;
+                const root = new BABYLON.TransformNode("casaRoot", scene);
+                meshes.forEach(m => { if (m.parent == null) m.parent = root; });
+                root.scaling = new BABYLON.Vector3(5, 5, 5);
+                root.position = new BABYLON.Vector3(0, 0, 0);
+                const casaTex = new BABYLON.Texture("textur/textur.jpg", scene, true, false, BABYLON.Texture.TRILINEAR_SAMPLINGMODE, null, (msg, exc) => {});
+                meshes.forEach(mesh => {
+                    if (!mesh.material) mesh.material = new BABYLON.StandardMaterial("casaMat", scene);
+                    const mat = mesh.material;
+                    if (mat && "diffuseTexture" in mat && !mat.diffuseTexture) mat.diffuseTexture = casaTex;
+                    else if (mat && "albedoTexture" in mat && !mat.albedoTexture) mat.albedoTexture = casaTex;
+                });
+            };
+
+            const loadCasaWith = (ext, triedGlbFallback = false) => {
+                BABYLON.SceneLoader.ImportMesh(
+                    "",
+                    "./",
+                    `casa.${ext}`,
+                    scene,
+                    onCasaLoaded,
+                    null,
+                    () => {
+                        if (ext === "obj" && !triedGlbFallback) loadCasaWith("glb", true);
+                        else if (ext === "glb" && !triedGlbFallback) loadCasaWith("obj", true);
+                    }
+                );
+            };
+            loadCasaWith("obj");
+
+            const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 10, height: 10}, scene);
+            const groundMaterial = new BABYLON.StandardMaterial("groundMat", scene);
+            groundMaterial.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+            ground.material = groundMaterial;
+
+            let angle = 0;
+            scene.onBeforeRenderObservable.add(() => {
+                angle += 0.01;
+                sphere.position.y = 1 + Math.sin(angle) * 0.5;
+                sphere.rotation.y += 0.01;
+            });
+
+            return scene;
+        };
+
+        const scene = createScene();
+        engine.runRenderLoop(() => scene.render());
+        window.addEventListener("resize", () => engine.resize());
+    </script>
+</body>
+</html>
